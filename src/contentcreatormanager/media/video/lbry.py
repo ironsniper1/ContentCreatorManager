@@ -88,16 +88,16 @@ class LBRYVideo(lbry_media.LBRYMedia):
     def set_file_based_on_title(self):
         valid = '`~!@#$%^&+=,-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         file_name = self.title    
-        
-        getVals = list([val for val in f"{file_name}.mp4" if val in valid])
-        
+
+        getVals = [val for val in f"{file_name}.mp4" if val in valid]
+
         result = "".join(getVals)
-        
+
         self.logger.info(f"returning and setting the following file name: {result}")
-        
+
         vid_dir = os.path.join(os.getcwd(), 'videos')
         self.file = os.path.join(vid_dir, result)
-            
+
         return result
     
     def make_thumb(self):
@@ -153,39 +153,38 @@ class LBRYVideo(lbry_media.LBRYMedia):
         if not self.is_uploaded():
             self.logger.error("Video not on LBRY can not download it")
             return
-        
+
         get_result = self.platform.api_get(uri=self.permanent_url,
                                            download_directory=self.settings.folder_location,
                                            file_name=os.path.basename(self.file))
-        
+
         try:
             streaming_url = get_result['result']['streaming_url']
         except KeyError as e:
-            if e.args[0] == 'streaming_url':
-                m="The Video You are trying to download not found on LBRY"
-                self.logger.error(m)
-                return 'get_error'
-            else:
+            if e.args[0] != 'streaming_url':
                 raise e
+            m="The Video You are trying to download not found on LBRY"
+            self.logger.error(m)
+            return 'get_error'
         m=f"running a request {streaming_url} to wait for blobs to finish downloading"
         self.logger.info(m)
         requests.get(streaming_url)
-        
+
         if os.path.isfile(self.file):
             os.remove(self.file)
-        
+
         file_save_result = self.platform.api_file_save(claim_id=self.id, 
                                                        download_directory=self.settings.folder_location,
                                                        file_name=os.path.basename(self.file))
-        
+
         actual_file_path = file_save_result['result']['download_path']
         desired_file_path = self.file
-        
+
         if actual_file_path == desired_file_path:         
             return get_result
-        
+
         self.logger.info(f"we want {desired_file_path} we got {actual_file_path} copying to desired location and deleting original")
-        
+
         shutil.copy(actual_file_path, desired_file_path)
         os.remove(actual_file_path)
         os.remove(os.path.join(os.getcwd(), os.path.basename(desired_file_path)))
@@ -198,25 +197,25 @@ class LBRYVideo(lbry_media.LBRYMedia):
             m="You already uploaded this Video to LBRY.  Exitting method"
             self.logger.error(m)
             return
-        
+
         file_name = os.path.basename(self.file)
-        
+
         if not os.path.isfile(self.file):
             self.logger.error(f"Can not find file: {file_name}")
-        
+
         self.logger.info("attempting to upload thumbnail")
         self.upload_thumbnail(update_video=False, use_existing_thumb_if_present=True)
-        
+
         self.logger.info(f"Attempting to upload {file_name}")
         result = self.__upload_new_video()
-        
+
         if result is None or 'error' in result:
             m="No Upload made not updating any properties of LBRY Video Object"
             self.logger.error(f'{m}\n{result}')
         else:
             finished = False
+            m="Sleeping for 1 min before checking for completion of upload"
             while not finished:
-                m="Sleeping for 1 min before checking for completion of upload"
                 self.logger.info(m)
                 time.sleep(60)
                 if self.is_uploaded():

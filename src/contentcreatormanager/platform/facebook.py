@@ -56,27 +56,26 @@ class Facebook(plat.Platform):
         Method to create and send a Facebook post.
         """
         post = fb_post.FacebookPost(self, msg)
-        
+
         try:
             result = post.upload()
         except facebook.GraphAPIError as e:
-            if e.message == 'Duplicate status message':
-                m="Posting Failed.  You are trying to make a duplicate post"
-                self.logger.error(m)
-                post.uploaded = False
-                return post
-            else:
+            if e.message != 'Duplicate status message':
                 raise e
-        
+
+            m="Posting Failed.  You are trying to make a duplicate post"
+            self.logger.error(m)
+            post.uploaded = False
+            return post
         #this should be changed to use a is_uploaded
         # method from the facebook post class
         m=f"Setting FB Post ID to {result['id']}, setting posted flag to true"
         self.logger.info(m)
         post.id = result['id']
         post.uploaded = True
-        
+
         self.add_media(post)
-        
+
         return post
         
     def api_post_feed(self, ID : str, message : str, page_access_token : str):

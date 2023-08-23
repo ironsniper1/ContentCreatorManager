@@ -45,11 +45,11 @@ class YouTubeVideo(media_vid.Video):
         super().__init__(platform=channel,
                                            ID=ID,file_name=file_name)
         self.logger = self.settings.YouTube_logger
-        
+
         self.logger.info("Initializing Video Object as a YouTube Video Object")
-        
+
         self.channel = channel
-        
+
         self.published_at = published_at
         self.channel_id = channel_id
         self.title = title
@@ -76,13 +76,13 @@ class YouTubeVideo(media_vid.Video):
         self.dislike_count = dislike_count
         self.comment_count = comment_count
         self.favorite_count = favorite_count
-        
-        if file_name == '':
+
+        if not file_name:
             file_name = self.title
             vid_dir = os.path.join(os.getcwd(), 'videos')
             self.file = os.path.join(vid_dir,
                                      self.get_valid_video_file_name(desired_file_name=file_name))
-        
+
         if new_video:
             m="new_video not attempting to initialize pytube_obj variable"
             self.logger.info(m)
@@ -96,8 +96,8 @@ class YouTubeVideo(media_vid.Video):
                 self.logger.info(m)
                 self.update_local()
                 self.logger.info("update ran")
-                
-        
+
+
         self.logger.info("YouTube Video Object initialized")
         
     def __initialize_upload(self):
@@ -230,8 +230,7 @@ class YouTubeVideo(media_vid.Video):
         """
         Private Method to get YouTube URL
         """
-        url = f"{YouTubeVideo.BASE_URL}{self.id}"
-        return url
+        return f"{YouTubeVideo.BASE_URL}{self.id}"
     
     def __get_pytube(self, use_oauth=True):
         """
@@ -293,9 +292,8 @@ class YouTubeVideo(media_vid.Video):
                 if self.is_uploaded():
                     self.update_local()
                 else:
-                    self.update_local()       
-        result = media_vid.Video.is_downloaded(self)
-        return result
+                    self.update_local()
+        return media_vid.Video.is_downloaded(self)
     
     def delete_web(self, do_not_download_before_delete : bool = False):
         """
@@ -306,7 +304,7 @@ class YouTubeVideo(media_vid.Video):
         """
         m=f"Preparing to delete video with ID {self.id} from YouTube"
         self.logger.info(m)
-        
+
         if not self.is_downloaded() and not do_not_download_before_delete:
             m="File for video not found.  Downloading before removal"
             self.logger.warning(m)
@@ -314,26 +312,26 @@ class YouTubeVideo(media_vid.Video):
             if result == 'content-length-error':
                 self.logger.error("Download failed with pytube issue not removing")
                 return 'content-length-error'
-        
+
         self.logger.info("Making videos.delete api call")
         request = self.channel.service.videos().delete(
             id=self.id
         )
         result = request.execute()
-        
+
         tries_left = YouTubeVideo.MAX_RETRIES
         while self.is_uploaded() and tries_left > 0:
-            m=f"Video found on YouTube.  Sleeping a minute and checking again."
+            m = "Video found on YouTube.  Sleeping a minute and checking again."
             self.logger.warning(m)
             time.sleep(60)
             tries_left -= 1
-        
+
         if self.uploaded:
             m=f"Video still found on YouTube.  Results of the call:\n{result}"
             self.logger.error(m)
         else:
             self.logger.info("Delete successful")
-        
+
         return result
 
     def update_web(self, force_update : bool = False):
@@ -351,37 +349,34 @@ class YouTubeVideo(media_vid.Video):
                 m="Video not uploaded.  Can not update its web details"
                 self.logger.error(m)
                 return
-        
-        update_snippet = {}
-        update_snippet['categoryId']=self.category_id
-        update_snippet['defaultLanguage']=self.default_language
-        update_snippet['description']=self.description
-        update_snippet['tags']=self.tags
-        update_snippet['title']=self.title
-        update_status = {}
-        update_status['embeddable']=self.embeddable
-        update_status['license']=self.license
-        update_status['privacyStatus']=self.privacy_status
-        update_status['publicStatsViewable']=self.public_stats_viewable
-        update_status['selfDeclaredMadeForKids']=self.self_declared_made_for_kids
-        
+
+        update_snippet = {
+            'categoryId': self.category_id,
+            'defaultLanguage': self.default_language,
+            'description': self.description,
+            'tags': self.tags,
+            'title': self.title,
+        }
+        update_status = {
+            'embeddable': self.embeddable,
+            'license': self.license,
+            'privacyStatus': self.privacy_status,
+            'publicStatsViewable': self.public_stats_viewable,
+            'selfDeclaredMadeForKids': self.self_declared_made_for_kids,
+        }
         if not force_update:
             current_web_status = self.platform.api_videos_list(ids=self.id,
                                                                snippet=True,
                                                                contentDetails=True,
                                                                statistics=True,
                                                                status=True)
-        
+
             current_web_snippet = current_web_status['snippet']
             current_web_status = current_web_status['status']
-        
-            need_to_update=False
-            
+
             cond1 = update_snippet == current_web_snippet
             cond2 = update_status == current_web_status
-            if not (cond1 and cond2):
-                need_to_update = True
-            
+            need_to_update = not cond1 or not cond2
             if not need_to_update:
                 self.logger.info("No need to update returning None")
                 return None
@@ -408,22 +403,19 @@ class YouTubeVideo(media_vid.Video):
                 m="Can not update local details from YouTube"
                 self.logger.error(m)
                 return
-        
+
         self.logger.info(f"Updating Video with id {self.id} from the web")
-        
+
         video = self.platform.api_videos_list(ids=self.id, snippet=True,
                                               contentDetails=True,
                                               statistics=True,
                                               status=True)['items'][0]
-        
+
         if video is None:
-            self.logger.error(f"Trying to update local but can not find video")
+            self.logger.error("Trying to update local but can not find video")
             return None
-        
-        if 'tags' not in video['snippet']:
-            tags = []
-        else:
-            tags = video['snippet']['tags']
+
+        tags = [] if 'tags' not in video['snippet'] else video['snippet']['tags']
         if 'description' not in video['snippet']:
             description = ""
         else:
@@ -438,7 +430,7 @@ class YouTubeVideo(media_vid.Video):
         else:
             d=video['snippet']['defaultAudioLanguage']
             default_audio_language = d
-    
+
         self.published_at = video['snippet']['publishedAt']
         self.channel_id = video['snippet']['channelId']
         self.title = video['snippet']['title']
@@ -465,12 +457,12 @@ class YouTubeVideo(media_vid.Video):
         self.comment_count = video['statistics']['commentCount']
         self.favorite_count = video['statistics']['favoriteCount']
 
-        
+
         if update_file_name:
             f=self.get_valid_video_file_name(desired_file_name=self.title)
             file_name = f
             self.file = os.path.join(os.getcwd(), file_name)
-        
+
         self.logger.info("Update from web complete")
         return video
         
@@ -528,9 +520,7 @@ class YouTubeVideo(media_vid.Video):
             if not self.is_uploaded():
                 self.logger.error("Video not uploaded. Can not download it")
                 return
-        result = self.__pytube_download(overwrite=overwrite)
-        
-        return result
+        return self.__pytube_download(overwrite=overwrite)
         
     def is_uploaded(self):
         """
@@ -545,12 +535,12 @@ class YouTubeVideo(media_vid.Video):
 
         response = requests.get(url)
         if response.status_code == 200:
-            if not "Video unavailable" in response.text:
+            if "Video unavailable" not in response.text:
                 self.uploaded = True
                 return True
-        
+
         result = self.platform.api_videos_list(contentDetails=True,ids=self.id)
-        
+
         if result['pageInfo']['totalResults'] == 0:
             self.uploaded = False
             return False

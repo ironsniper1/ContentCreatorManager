@@ -237,9 +237,8 @@ class YouTube(plat.Platform):
             self.logger.error(f"Error:\n{e}")
             return result
         self.logger.info("Chanels.list API Call made without Exception")
-        
-        res=result['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-        return res
+
+        return result['items'][0]['contentDetails']['relatedPlaylists']['uploads']
     
     def __set_videos(self):
         """
@@ -259,7 +258,7 @@ class YouTube(plat.Platform):
         """
         result = None
         num_pages = 1
-        
+
         m="Making intial PlaylistItems.list API call"
         self.logger.info(m)
         try:
@@ -270,14 +269,14 @@ class YouTube(plat.Platform):
             self.logger.error(f"Error During API call:\n{e}")
             return None
         self.logger.info("PlaylistIems.list API Call made without exception")
-        
+
         self.logger.info("Adding first page of data to pages")
         pages = [result['items']]
-        
+
         csv_length = result['pageInfo']['totalResults']
-        
+
         next_page_token = None
-        
+
         if 'nextPageToken' in result:
             m="Setting next page token as there are multiple pages of data"
             self.logger.info(m)
@@ -286,7 +285,8 @@ class YouTube(plat.Platform):
             two=result['pageInfo']['resultsPerPage']
             num_pages = math.ceil(one/two)
             csv_length=math.ceil(result['pageInfo']['totalResults']/num_pages)
-        
+
+        m="PlaylistIems.list API Call made without exception"
         while next_page_token is not None:
             self.logger.info("Making a playlistitems.list call")
             try:
@@ -297,27 +297,24 @@ class YouTube(plat.Platform):
             except HttpError as e:
                 self.logger.error(f"Error:\n{e}")
                 return None
-            m="PlaylistIems.list API Call made without exception"
             self.logger.info(m)
-            
+
             self.logger.info("Adding page of data to pages")
             pages.append(result['items'])
-            
+
             next_page_token = None
-            
+
             if 'nextPageToken' in result:
-                m="There is another page of data setting the token"
-                self.logger.info(m)
+                self.logger.info("There is another page of data setting the token")
                 next_page_token = result['nextPageToken']
-                
+
         video_ids = self.__get_items_from_pages(pages, True)
-                
-        return_data = {
-            "video_ids":video_ids,
-            "num_pages":num_pages,
-            "csv_length":csv_length        
+
+        return {
+            "video_ids": video_ids,
+            "num_pages": num_pages,
+            "csv_length": csv_length,
         }
-        return return_data
     
     def __get_items_from_pages(self, pages, just_ids : bool = False):
         """
@@ -370,11 +367,7 @@ class YouTube(plat.Platform):
         Private Method to grab data from multiple
         csv strings provided in the form of a list
         """
-        pages = []
-        
-        for csv in csvs:
-            pages.append(self.__get_video_data_from_csv(csv))
-        return pages
+        return [self.__get_video_data_from_csv(csv) for csv in csvs]
     
     def __get_video_data_from_csv(self, csv : str):
         """
@@ -413,9 +406,7 @@ class YouTube(plat.Platform):
         First object data will be set using provided request
         (results from an API call)
         """
-        tags = []
-        if not ('tags' not in request['snippet']):
-            tags = request['snippet']['tags']
+        tags = [] if 'tags' not in request['snippet'] else request['snippet']['tags']
         description = ""
         if not ('description' not in request['snippet']):
             description = request['snippet']['description']
@@ -426,7 +417,7 @@ class YouTube(plat.Platform):
         default_audio_language = 'en-US'
         if not ('defaultAudioLanguage' not in request['snippet']):
             default_audio_language = request['snippet']['defaultAudioLanguage']
-            
+
         ytv = yt_vid.YouTubeVideo(channel=self, ID=request['id'], 
                                   favorite_count=request['statistics']['favoriteCount'],
                                   comment_count=request['statistics']['commentCount'],
@@ -553,7 +544,7 @@ class YouTube(plat.Platform):
         Returns a googleapiclient.http.HttpRequest object to be fed to api_videos_insert_exec
         """
         self.logger.info("Making YouTube API Call to videos.insert which costs 1600 quota unit")
-        
+
         parts = self.__get_parts(contentDetails=contentDetails,snippet=snippet,
                                  statistics=statistics, status=status,
                                  fileDetails=fileDetails, ID=ID,
@@ -565,15 +556,15 @@ class YouTube(plat.Platform):
                                  topicDetails=topicDetails,
                                  auditDetails=False, brandingSettings=False,
                                  contentOwnerDetails=False)
-        
-        
+
+
         if len(parts) == 0:
             m="At least one part required api call will not be made"
             self.logger.error(m)
             return None
-        
+
         part = ','.join(parts)
-        
+
         snippet_dict={'title':snippet_title, 'description':snippet_description,
                         'tags':snippet_tags, 'categoryId':snippet_categoryId,
                         'defaultLanguage':snippet_defaultLanguage}
@@ -582,20 +573,21 @@ class YouTube(plat.Platform):
                        'publicStatsViewable':status_publicStatsViewable,
                        'selfDeclaredMadeForKids':status_selfDeclaredMadeForKids
         }
-        
+
         body = {'snippet':snippet_dict,'status':status_dict}        
-        
+
         m=f"API part: {part}, body: {body}, notifySubscribers: {notifySubscribers}, video: {file}"
         self.logger.info(m)
-        
+
         v=self.service.videos()
-        request = v.insert(body=body,
-                           media_body=googleapiclient.http.MediaFileUpload(file,
-                                                                           chunksize=-1,
-                                                                           resumable=True),
-                           part=part, notifySubscribers=notifySubscribers)
-        
-        return request
+        return v.insert(
+            body=body,
+            media_body=googleapiclient.http.MediaFileUpload(
+                file, chunksize=-1, resumable=True
+            ),
+            part=part,
+            notifySubscribers=notifySubscribers,
+        )
     
     def api_videos_insert_exec(self, request):
         """
@@ -629,11 +621,10 @@ class YouTube(plat.Platform):
                         self.logger.warning(m)
                         return response
             except HttpError as e:
-                if e.resp.status in YouTube.RETRIABLE_STATUS_CODES:
-                    e=f"Retriable HTTP error {e.resp.status} occurred:\n{e.content}"
-                    error=e
-                else:
+                if e.resp.status not in YouTube.RETRIABLE_STATUS_CODES:
                     raise e
+                e=f"Retriable HTTP error {e.resp.status} occurred:\n{e.content}"
+                error=e
             except YouTube.RETRIABLE_EXCEPTIONS as e:
                 error = f"A retriable error occurred: {e}"
 
@@ -643,21 +634,21 @@ class YouTube(plat.Platform):
                 if retry > YouTube.MAX_RETRIES:
                     self.logger.error('No longer attempting to retry.')
                     return response
-                    
+
 
                 max_sleep = 2 ** retry
                 sleep_seconds = random.random() * max_sleep
                 m=f"Sleeping {sleep_seconds} seconds and then retrying..."
                 self.logger.info(m)
                 time.sleep(sleep_seconds)
-        
+
         self.logger.info("Videos.insert call to YouTube API complete")
-        
+
         self.quota_usage += quota_cost
-        
+
         m=f"API call made.  Current Quota Usage: {self.quota_usage}"
         self.logger.info(m)
-        
+
         return response
     
     def api_videos_update(self, snippet_categoryId : int,
@@ -806,14 +797,14 @@ class YouTube(plat.Platform):
                                                             pageToken='EAAaBlBUOkNBTQ')
         Example Results with pageToken: {'kind': 'youtube#playlistItemListResponse', 'etag': '2ixEvQy_1aHNH3YpSIv_nplMJvs', 'nextPageToken': 'EAAaBlBUOkNBWQ', 'prevPageToken': 'EAEaBlBUOkNBTQ', 'items': [{'kind': 'youtube#playlistItem', 'etag': 'QgGQdMYagwQGQm7i2hKZJ2X6tv4', 'id': 'VVVpZHJIdkZYQnZ5ZXNoMWhiT1IyclR3LmhBTXBfQlFEZjAw', 'contentDetails': {'videoId': 'hAMp_BQDf00', 'videoPublishedAt': '2021-10-02T12:00:32Z'}}, {'kind': 'youtube#playlistItem', 'etag': 'R4AzQocoTVqgoUIHkVGWMx7OtAA', 'id': 'VVVpZHJIdkZYQnZ5ZXNoMWhiT1IyclR3LkhZTTZRT1dKT0Q4', 'contentDetails': {'videoId': 'HYM6QOWJOD8', 'videoPublishedAt': '2021-10-01T18:00:05Z'}}, {'kind': 'youtube#playlistItem', 'etag': '42I4J4EAopmbwZ3p9VtanWygqlM', 'id': 'VVVpZHJIdkZYQnZ5ZXNoMWhiT1IyclR3LkkyVTB2SUZzc2lz', 'contentDetails': {'videoId': 'I2U0vIFssis', 'videoPublishedAt': '2021-10-01T12:00:10Z'}}], 'pageInfo': {'totalResults': 158, 'resultsPerPage': 3}}
         """
-        if (playlistId == '' and ids == '') or (playlistId != '' and ids != ''):
+        if not playlistId and not ids or (playlistId != '' and ids != ''):
             self.logger.error("ids (comma-separated list of one or more unique playlist item IDs.) or playlistId (unique ID of the playlist for which you want to retrieve playlist items) must be set but both can not be")
             return
-        
+
         m="YouTube API Call to playlistitems.list cost of 1 quota unit"
         self.logger.info(m)
         quota_cost = 1
-        
+
         parts = self.__get_parts(contentDetails=contentDetails,snippet=snippet,
                                  statistics=False, status=status,
                                  fileDetails=False, ID=ID,
@@ -824,28 +815,16 @@ class YouTube(plat.Platform):
                                  topicDetails=False, auditDetails=False,
                                  brandingSettings=False,
                                  contentOwnerDetails=False)
-        
+
         if len(parts) == 0:
             m="At least one part required api call will not be made"
             self.logger.error(m)
             return None
-        
+
         part = ','.join(parts)
-        
+
         pis=self.service.playlistItems()
-        if playlistId == '':
-            if videoId != '' and pageToken != '':
-                request = pis.list(part=part,maxResults=maxResults,id=ids,
-                                   videoId=videoId, pageToken=pageToken)
-            elif pageToken != '':
-                request = pis.list(part=part,maxResults=maxResults,id=ids,
-                                   pageToken=pageToken)
-            elif videoId != '':
-                request = pis.list(part=part, maxResults=maxResults, id=ids,
-                                   videoId=videoId)
-            else:
-                request = pis.list(part=part, maxResults=maxResults, id=ids)
-        elif ids == '':
+        if playlistId:
             if videoId != '' and pageToken != '':
                 request = pis.list(part=part, maxResults=maxResults,
                                    playlistId=playlistId, videoId=videoId,
@@ -859,16 +838,27 @@ class YouTube(plat.Platform):
             else:
                 request = pis.list(part=part, maxResults=maxResults,
                                    playlistId=playlistId)
-        
-        self.logger.info(f"API call being made")        
-        
+
+        elif videoId != '' and pageToken != '':
+            request = pis.list(part=part,maxResults=maxResults,id=ids,
+                               videoId=videoId, pageToken=pageToken)
+        elif pageToken != '':
+            request = pis.list(part=part,maxResults=maxResults,id=ids,
+                               pageToken=pageToken)
+        elif videoId != '':
+            request = pis.list(part=part, maxResults=maxResults, id=ids,
+                               videoId=videoId)
+        else:
+            request = pis.list(part=part, maxResults=maxResults, id=ids)
+        self.logger.info("API call being made")        
+
         result = request.execute()
-        
+
         self.quota_usage += quota_cost
-        
+
         m=f"API call made.  Current Quota Usage: {self.quota_usage}"
         self.logger.info(m)
-        
+
         return result
     
     def api_playlistitems_insert(self):

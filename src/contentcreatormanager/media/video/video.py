@@ -21,30 +21,30 @@ class Video(media.Media):
         description, and thumbnail_file_name string.  The Strings
         are all optional but ID or file_name must be provided
         """
-        if ID == '' and file_name == '':
+        if not ID and not file_name:
             m="You must set either the file_name or ID to create a Video"
             platform.settings.Video_logger.error(m)
             raise Exception()
-        
+
         super().__init__(platform=platform, ID=ID)
-        
+
         self.logger = self.settings.Video_logger
         self.logger.info("Initializing Media Object as a Video object")
-        
+
         vid_dir = os.path.join(os.getcwd(), 'videos')
-        if file_name == '':
+        if not file_name:
             self.file = os.path.join(vid_dir, self.get_valid_video_file_name())
         else:
             self.file = os.path.join(vid_dir, file_name)
         self.thumbnail = os.path.join(os.getcwd(),
                                       self.get_valid_thumbnail_file_name(thumbnail_file_name))
-        
+
         file_does_not_exist = not os.path.isfile(self.file)
-        
-        if file_does_not_exist and ID == '':
+
+        if file_does_not_exist and not ID:
             m=f"no file found for file_name {file_name} and no ID set"
             self.logger.error(m)
-        
+
         self.title = title
         self.description = description
     
@@ -68,18 +68,18 @@ class Video(media.Media):
         v='`~!@#$%^&+=,-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         valid_chars = v
         file_name = desired_file_name
-        if desired_file_name[-4:] == '.mp4':
+        if desired_file_name.endswith('.mp4'):
             self.logger.info("file name given already has .mp4 in it")
             file_name = desired_file_name[:-4]
-        if desired_file_name == '':
+        if not desired_file_name:
             file_name = self.title    
-        
-        getVals = list([val for val in f"{file_name}.mp4" if val in valid_chars])
-        
+
+        getVals = [val for val in f"{file_name}.mp4" if val in valid_chars]
+
         result = "".join(getVals)
-        
+
         self.logger.info(f"returning the following file name: {result}")
-            
+
         return result
     
     def combine_audio_and_video_files(self, video_file, audio_file):

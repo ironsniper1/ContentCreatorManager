@@ -78,31 +78,44 @@ class Reddit(plat.Platform):
         Example Return URL (the url property): https://www.reddit.com/r/test/comments/t6l0o2/ccc_test_post/
         """
         self.logger.info("Making Reddit API call to post text to a subreddit")
-        
+
         subreddit = self.praw.subreddit(subreddit)
-        
-        
-        if not (flair_id == '' or flair_id is None):
-            if not(flair_text == '' or flair_text is None):
-                result = subreddit.submit(title=title, selftext=selftext,
-                                          flair_id=flair_id,
-                                          flair_text=flair_text,
-                                          send_replies=send_replies,
-                                          nsfw=nsfw)  
-            else:
-                result = subreddit.submit(title=title, selftext=selftext,
-                                          flair_id=flair_id,
-                                          send_replies=send_replies,
-                                          nsfw=nsfw)
-        elif not(flair_text == '' or flair_text is None):
-            result = subreddit.submit(title=title, selftext=selftext,
-                                      flair_text=flair_text,
-                                      send_replies=send_replies, nsfw=nsfw)
+
+
+        if flair_id and flair_id is not None:
+            return (
+                subreddit.submit(
+                    title=title,
+                    selftext=selftext,
+                    flair_id=flair_id,
+                    flair_text=flair_text,
+                    send_replies=send_replies,
+                    nsfw=nsfw,
+                )
+                if flair_text and flair_text is not None
+                else subreddit.submit(
+                    title=title,
+                    selftext=selftext,
+                    flair_id=flair_id,
+                    send_replies=send_replies,
+                    nsfw=nsfw,
+                )
+            )
+        elif not (not flair_text or flair_text is None):
+            return subreddit.submit(
+                title=title,
+                selftext=selftext,
+                flair_text=flair_text,
+                send_replies=send_replies,
+                nsfw=nsfw,
+            )
         else:
-            result = subreddit.submit(title=title, selftext=selftext,
-                                      send_replies=send_replies, nsfw=nsfw)
-        
-        return result
+            return subreddit.submit(
+                title=title,
+                selftext=selftext,
+                send_replies=send_replies,
+                nsfw=nsfw,
+            )
     
     def api_submit_url(self, subreddit : str, title : str, url : str = '',
                        flair_id : str = '', flair_text : str = '',
@@ -118,23 +131,38 @@ class Reddit(plat.Platform):
         Example Return URL (the url property): https://odysee.com/@TechGirlTiff:5/ContentCreatorManager_Dev_Project_Update_00004:4 (note this returns the URL the post links to but the link to the comments could be constructed https://www.reddit.com/r/test/comments/t6l1ou/ccc_test_url_post/)
         """
         self.logger.info("Making Reddit API call to post a URL to a subreddit")
-        
+
         subreddit = self.praw.subreddit(subreddit)
-        
-        if not (flair_id == '' or flair_id is None):
-            if not(flair_text == '' or flair_text is None):
-                result=subreddit.submit(title=title, url=url,flair_id=flair_id,
-                                          flair_text=flair_text,
-                                          send_replies=send_replies, nsfw=nsfw)
-            else:
-                result=subreddit.submit(title=title, url=url,flair_id=flair_id,
-                                          send_replies=send_replies, nsfw=nsfw)
-        elif not(flair_text == '' or flair_text is None):       
-            result=subreddit.submit(title=title, url=url,flair_text=flair_text,
-                                      send_replies=send_replies, nsfw=nsfw)      
+
+        if flair_id and flair_id is not None:
+            return (
+                subreddit.submit(
+                    title=title,
+                    url=url,
+                    flair_id=flair_id,
+                    flair_text=flair_text,
+                    send_replies=send_replies,
+                    nsfw=nsfw,
+                )
+                if flair_text and flair_text is not None
+                else subreddit.submit(
+                    title=title,
+                    url=url,
+                    flair_id=flair_id,
+                    send_replies=send_replies,
+                    nsfw=nsfw,
+                )
+            )
+        elif not (not flair_text or flair_text is None):   
+            return subreddit.submit(
+                title=title,
+                url=url,
+                flair_text=flair_text,
+                send_replies=send_replies,
+                nsfw=nsfw,
+            )
         else:
-            result = subreddit.submit(title=title, url=url,
-                                      send_replies=send_replies, nsfw=nsfw)
-        
-        return result
+            return subreddit.submit(
+                title=title, url=url, send_replies=send_replies, nsfw=nsfw
+            )
     

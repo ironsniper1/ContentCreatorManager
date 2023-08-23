@@ -160,8 +160,10 @@ class Methods:
                 picked = False
                 for ch in channels['result']['items']:
                     if not picked:
-                        option = tk_mb.askyesno(title='LBRY Channel Confirmation',message=f'Do you want to use this channel:{ch["name"]}')
-                        if option:
+                        if option := tk_mb.askyesno(
+                            title='LBRY Channel Confirmation',
+                            message=f'Do you want to use this channel:{ch["name"]}',
+                        ):
                             window = tk.Toplevel()
                             window.geometry("400x90")
                             window.wm_title("Loading LBRY Data")
@@ -179,19 +181,19 @@ class Methods:
                 window.update_idletasks()
                 window.grab_set()
                 self.lbry_plat = lbry_plat.LBRY(settings=self.settings, ID=channels['result']['items'][0]['claim_id'], init_videos=True)   
-        
+
         for vid in self.lbry_plat.media_objects:
             if not os.path.isfile(vid.file):
                 self.lbry_vid_not_dl.append(vid)
                 self.lbry_vid_not_dl_titles.append(vid.title)
-        
+
         self.lbry_vid_var.set(self.lbry_plat.media_object_titles)
         self.lbry_vid_not_var.set(self.lbry_vid_not_dl_titles)
         window.destroy()  
 
     def get_vids_yt_not_lbry(self):
         self.logger.info("Getting videos on YouTube not on LBRY")
-        
+
         list1 = self.yt_plat.media_objects
         list2 = self.lbry_plat.media_objects
         thumb_dir = os.path.join(os.getcwd(), 'thumbs')
@@ -215,14 +217,14 @@ class Methods:
                     lvid.thumbnail = obj.download_thumb()
                     os.chdir(self.settings.folder_location)
                 else:
-                    self.logger.info(f"Thumbnail already present no need to download")
+                    self.logger.info("Thumbnail already present no need to download")
                     lvid.thumbnail = obj.thumbnail
                     self.logger.info(f"Setting bid for new LBRY Vid to {self.default_bid}")
                     lvid.bid = self.default_bid
                 self.logger.info(f"Adding {lvid.title} to list of vids not on LBRY that are on YouTube")
                 self.lbry_upload_vids.append(lvid)
                 self.lbry_upload_titles.append(lvid.title)
-        
+
         self.lbry_up_var.set(self.lbry_upload_titles)
 
     def lbry_remove_upload_list(self):
@@ -346,7 +348,7 @@ class Methods:
 
     def get_vids_lbry_not_yt(self):
         self.logger.info("Getting videos on LBRY that are not on YouTube")
-        
+
         list1 = self.lbry_plat.media_objects
         list2 = self.yt_plat.media_objects
         thumb_dir = os.path.join(os.getcwd(), 'thumbs')
@@ -383,12 +385,12 @@ class Methods:
                     yvid.thumbnail = obj.download_thumb()
                     os.chdir(self.settings.folder_location)
                 else:
-                    self.logger.info(f"Thumbnail already present no need to download")
+                    self.logger.info("Thumbnail already present no need to download")
                     yvid.thumbnail = obj.thumbnail
                 self.logger.info(f"Adding {yvid.title} to list of vids not on YouTube that are on LBRY")
                 self.yt_upload_vids.append(yvid)
                 self.yt_upload_titles.append(yvid.title)
-        
+
         self.yt_up_var.set(self.yt_upload_titles)
 
     def yt_remove_upload_list(self):

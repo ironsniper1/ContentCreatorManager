@@ -24,7 +24,7 @@ class LBRYMedia(media.Media):
         """
         super().__init__(platform=lbry_channel, ID=ID)
         self.logger = self.settings.LBRY_logger
-        
+
         self.logger.info("Initializing Media Object as an LBRY Media Object")
         vid_dir = os.path.join(os.getcwd(), 'videos')
         self.file = os.path.join(vid_dir, file_name)
@@ -35,12 +35,12 @@ class LBRYMedia(media.Media):
         self.tags = tags
         self.bid = bid
         self.title = title
-        if name == '':
-            name = self.title        
+        if not name:
+            name = self.title
         self.name = self.get_valid_name(name)
         self.license = lic
         self.license_url = license_url
-        
+
         if not new_media:
             self.update_local()
     
@@ -50,7 +50,7 @@ class LBRYMedia(media.Media):
         """
         v='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-'
         valid_chars = v
-        getVals = list([val for val in name if val in valid_chars])
+        getVals = [val for val in name if val in valid_chars]
         result = "".join(getVals)
         self.logger.info(f"Returning stream name: {result}")
         return result
@@ -80,16 +80,16 @@ class LBRYMedia(media.Media):
         v='`~!@#$%^&+=,-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         valid_chars = v
         file_name = self.title    
-        
-        getVals = list([val for val in f"{file_name}" if val in valid_chars])
-        
+
+        getVals = [val for val in f"{file_name}" if val in valid_chars]
+
         result = "".join(getVals)
-        
+
         m=f"returning and setting the following file name: {result}"
         self.logger.info(m)
-        
+
         self.file = os.path.join(os.getcwd(), result)
-            
+
         return result
         
     def update_from_request(self, request):
@@ -243,20 +243,20 @@ class LBRYMedia(media.Media):
         it to what is on LBRY blockchain.  Returns True if it matches.
         """
         BUF_SIZE = 65536  #lets read stuff in 64kb chunks (arbitrary)!
-        
+
         sha384 = hashlib.sha384()#this is the hash type lbry uses for file hash
-        
+
         with open(self.file, 'rb') as f:
             while True:
-                data = f.read(BUF_SIZE)
-                if not data:
+                if data := f.read(BUF_SIZE):
+                    sha384.update(data)
+
+                else:
                     break
-                sha384.update(data)
-                
         if sha384.hexdigest() == self.file_hash:
             self.logger.info("Hash matches file.  Returning True")
             return True
-        
+
         m="File hash and sd_hash do not match.  Returning False"
         self.logger.error(m)
         return False  
