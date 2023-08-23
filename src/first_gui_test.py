@@ -282,25 +282,22 @@ class CCMApp(tk.Tk):
         self.lbry_vids_not_downloaded = []
         if self.lbry_plat is None:
             channels = lbry_plat.claim_list(claim_type=['channel'])
-            count = 1
             choices = {}
             options = []
-            for channel in channels['result']['items']:
+            for count, channel in enumerate(channels['result']['items'], start=1):
                 options.append(f"{count}. {channel['name']}")
                 choices[f'{count}'] = channel
-                count += 1
-            
             self.lbry_channel_chooser = SimpleChoiceBox(title="LBRY Channel", text="Pick Your LBRY Channel", choices=options)
             self.lbry_channel_chooser.c.wait_variable(self.lbry_channel_chooser.selection)
-            
+
             choice = self.lbry_channel_chooser.selection.get()[0]
-            
+
             self.lbry_plat = lbry_plat.LBRY(settings=self.settings, ID=choices[choice]['claim_id'], init_videos=True)
-        
+
         self.settings.Base_logger.info("Attempting to populate the LBRY ListBoxes")
         self.__populate_lbry_lb()
         self.deiconify()
-        
+
         return 'break'
     
     def __lbry_api_setup(self, event):
@@ -468,16 +465,14 @@ class CCMApp(tk.Tk):
                     yvid.thumbnail = obj.download_thumb()
                     os.chdir(self.settings.folder_location)
                 else:
-                    self.settings.Base_logger.info(f"Thumbnail already present no need to download")
+                    self.settings.Base_logger.info("Thumbnail already present no need to download")
                     yvid.thumbnail = obj.thumbnail
                 self.settings.Base_logger.info(f"Adding {yvid.title} to list of vids not on YouTube that are on LBRY")
                 list3.append(yvid)
-        count = 0
         self.settings.Base_logger.info("Populating the YouTube upload ListBox")
-        for o in list3:
+        for count, o in enumerate(list3):
             self.settings.Base_logger.info(f"Adding {o.title} to the upload listbox for YouTube")
             self.yt_upload_lb.insert(count, o.title)
-            count += 1
         self.yt_upload_list = list3
         return
     
@@ -512,18 +507,16 @@ class CCMApp(tk.Tk):
                     lvid.thumbnail = obj.download_thumb()
                     os.chdir(self.settings.folder_location)
                 else:
-                    self.settings.Base_logger.info(f"Thumbnail already present no need to download")
+                    self.settings.Base_logger.info("Thumbnail already present no need to download")
                     lvid.thumbnail = obj.thumbnail
                     self.settings.Base_logger.info(f"Setting bid for new LBRY Vid to {self.default_bid}")
                     lvid.bid = self.default_bid
                 self.settings.Base_logger.info(f"Adding {lvid.title} to list of vids not on LBRY that are on YouTube")
                 list3.append(lvid)
-        count = 0
         self.settings.Base_logger.info("Populating the LBRY upload ListBox")
-        for o in list3:
+        for count, o in enumerate(list3):
             self.settings.Base_logger.info(f"Adding {o.title} to the upload listbox for LBRY")
             self.lbry_upload_lb.insert(count, o.title)
-            count += 1
         self.lbry_upload_list = list3
         return
     
@@ -531,9 +524,8 @@ class CCMApp(tk.Tk):
         """
         Private Method to popuate the LBRY Channel List Boxes
         """
-        count = 0
         count_2 = 0
-        for o in self.lbry_plat.media_objects:
+        for count, o in enumerate(self.lbry_plat.media_objects):
             self.settings.Base_logger.info(f"Adding {o.title} to yt lb position {count}")
             self.lbry_lb.insert(count, o.title)
             self.settings.Base_logger.info(f"checking if file {o.file} is downloaded")
@@ -543,16 +535,14 @@ class CCMApp(tk.Tk):
                 self.lbry_vids_not_downloaded.append(o)
                 self.lbry_not_downloaded_lb.insert(count_2, o.title)
                 count_2 += 1
-            count += 1
             
     
-    def __populate_yt_lb(self): 
+    def __populate_yt_lb(self):
         """
         Private Method to populate the YouTube List Boxes
         """
-        count = 0
         count_2 = 0
-        for o in self.yt_plat.media_objects:
+        for count, o in enumerate(self.yt_plat.media_objects):
             self.settings.Base_logger.info(f"Adding {o.title} to yt lb position {count}")
             self.yt_lb.insert(count, o.title)
             self.settings.Base_logger.info(f"checking if file {o.file} is downloaded")
@@ -562,7 +552,6 @@ class CCMApp(tk.Tk):
                 self.yt_vids_not_downloaded.append(o)
                 self.yt_not_downloaded_lb.insert(count_2, o.title)
                 count_2 += 1
-            count += 1
             
     
     def __create_yt_client_secrets(self):
@@ -594,7 +583,7 @@ class CCMApp(tk.Tk):
         """
         Private Method to set up the Applications home base and return settings for it
         """
-        if folder_location == '':
+        if not folder_location:
             folder = tk_fd.askdirectory(title='Choose Application Directory')
         else:
             folder = folder_location

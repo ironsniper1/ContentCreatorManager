@@ -39,13 +39,11 @@ class Platform(object):
         a dict with the json data in it
         """
         os.chdir(self.settings.original_dir)
-        
-        f = open(file)
-        data = json.load(f)
-        f.close()
-        
+
+        with open(file) as f:
+            data = json.load(f)
         os.chdir(self.settings.folder_location)
-        
+
         return data
     
     def add_video(self, video : media_vid.Video):
@@ -58,19 +56,15 @@ class Platform(object):
         """
         Method to add a Media object to the media_objects list property
         """
-        duplicate = False
-        for media_obj in self.media_objects:
-            if media.id == media_obj.id:
-                duplicate = True
-        
+        duplicate = any(media.id == media_obj.id for media_obj in self.media_objects)
         if duplicate:
             m="Trying to add a Media Object with a duplicate ID not adding"
             self.logger.error(m)
             return
-        
+
         self.media_objects.append(media)
         self.media_object_titles.append(media.title)
-        
+
         m=f"Media Object with id {media.id} added to media_objects"
         self.logger.info(m)
         

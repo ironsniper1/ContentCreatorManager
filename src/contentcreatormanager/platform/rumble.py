@@ -91,10 +91,8 @@ class Rumble(plat.Platform):
                 'video': (os.path.basename(video_file),open(video_file,'rb')),
                 'guid' : (None, guid)
             }
-        
-        response = requests.post(Rumble.UPLOAD_API_URL, files=files)
-        
-        return response
+
+        return requests.post(Rumble.UPLOAD_API_URL, files=files)
     
     def api_media_item(self, fid : str, access_token : str):
         """
@@ -102,13 +100,10 @@ class Rumble(plat.Platform):
         """
         m="Media.Item API call implementation not working for Rumble"
         self.logger.warning(m)
-        
+
         files = {
             'fid': (None, fid),
             'access_token' : (None, access_token)
         }
-        
-        response = requests.post("https://rumble.com/api/v0/Media.Item",
-                                 files=files)
-        
-        return response
+
+        return requests.post("https://rumble.com/api/v0/Media.Item", files=files)

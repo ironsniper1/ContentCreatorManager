@@ -24,23 +24,20 @@ def claim_list(claim_type : list = [], claim_id : list = [],
         page_size=page_size,
         resolve=resolve,
     )
-        
-    if not (account_id == '' or account_id is None):
+
+    if account_id and account_id is not None:
         parameters['account_id']=account_id
-        
-    if not (page == 0 or page is None):
+
+    if page != 0 and page is not None:
         parameters['page']=page
-        
-    if not (order_by == '' or order_by is None):
+
+    if order_by and order_by is not None:
         parameters['order_by']=order_by
-        
-        
-    result = requests.post(LBRY.API_URL,
-                           json={"method": "claim_list",
-                                 "params": parameters}).json()
-        
-    
-    return result
+
+
+    return requests.post(
+        LBRY.API_URL, json={"method": "claim_list", "params": parameters}
+    ).json()
 
 class LBRY(plat.Platform):
     """
@@ -106,9 +103,7 @@ class LBRY(plat.Platform):
         Private method to make api call to get channel info based on claim_id
         (which is the id property) and return the results
         """
-        result = self.api_channel_list(claim_id=[self.id])
-            
-        return result
+        return self.api_channel_list(claim_id=[self.id])
     
     def __add_channel_videos(self):
         """
@@ -120,18 +115,16 @@ class LBRY(plat.Platform):
                                             channel_id=[self.id],
                                             order_by='name', resolve=False,
                                             page_size=LBRY.PAGE_RESULT_LENGTH)
-        
+
         page_amount = intial_result['result']['total_pages']
         item_amount = intial_result['result']['total_items']
-        
+
         self.logger.info(f"Found {item_amount} claims on channel")
-        
-        pages = []
+
         claims = []
-        
+
         self.logger.info("adding initial request as 1st page of data")
-        pages.append(intial_result['result']['items'])
-        
+        pages = [intial_result['result']['items']]
         if page_amount > 1:
             for x in range(page_amount-1):
                 self.logger.info(f"getting page {x+2} of data and adding it")
@@ -141,11 +134,9 @@ class LBRY(plat.Platform):
                                                      resolve=False,
                                                      page_size=LBRY.PAGE_RESULT_LENGTH)
                 pages.append(current_result['result']['items'])
-        
-        page = 0
+
         x = 0
         for p in pages:
-            page += 1
             for i in p:
                 x += 1
                   if i['value'].get('stream_type') == 'video':
@@ -154,9 +145,9 @@ class LBRY(plat.Platform):
                 else:
                     m=f"claim {i['name']} is not a video.  Not adding it"
                     self.logger.info(m)
-        
+
         num_claims_before = len(self.media_objects)
-        
+
         for c in claims:
             v = lbry_vid.LBRYVideo(ID=c['claim_id'], lbry_channel=self,
                                    request=c)
@@ -164,7 +155,7 @@ class LBRY(plat.Platform):
             thumb_dir = os.path.join(os.getcwd(), 'thumbs')
             v.thumbnail = os.path.join(thumb_dir, v.get_valid_thumbnail_file_name())
             self.add_media(v)
-        
+
         num_vids_added = len(self.media_objects) - num_claims_before
         m=f"{num_vids_added} LBRY Video Objects added to media_objects"
         self.logger.info(m)
@@ -192,7 +183,7 @@ class LBRY(plat.Platform):
             m="Either update from web or upload to it not both :P"
             self.logger.error(m)
             return None
-        
+
         vid = lbry_vid.LBRYVideo(settings=self.settings,
                                  lbry_channel=self,
                                  file_name=file_name)
@@ -201,11 +192,11 @@ class LBRY(plat.Platform):
         vid.title = title
         vid.description = description
         vid.bid = bid
-        
+
         if update_from_web:
             vid.update_local(use_name=True)
         elif upload:
-            if title == '' or description == '':
+            if not title or not description:
                 m="Title and Description Required for new upload."
                 self.logger.error(m)
             else:
@@ -239,20 +230,20 @@ class LBRY(plat.Platform):
         parameters = dict(
             uri=uri
         )
-        
-        if not (file_name == '' or file_name is None):
+
+        if file_name and file_name is not None:
             parameters['file_name'] = file_name
-        
-        if not (download_directory == '' or download_directory is None):
+
+        if download_directory and download_directory is not None:
             parameters['download_directory'] = download_directory
-        
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "get",
                                      "params": parameters}).json()
-        
+
         m=f"get call with parameters {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_channel_list(self, claim_id : list = [], page : int = 0,
@@ -270,21 +261,21 @@ class LBRY(plat.Platform):
             resolve=resolve,
             page_size=page_size
         )
-        
-        if not (page == 0 or page is None):
+
+        if page != 0 and page is not None:
             parameters['page'] = page
-            
-        if not (name == '' or name is None):
+
+        if name and name is not None:
             parameters['name'] = name
 
-        
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "channel_list",
                                      "params": parameters}).json()
-        
+
         m=f"channel_list call with params: {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_channel_create(self, name : str, bid : float, title : str,
@@ -412,30 +403,30 @@ class LBRY(plat.Platform):
             delete_from_download_dir=delete_from_download_dir,
             delete_all=delete_all
         )
-        
-        if not(sd_hash == '' or sd_hash is None):
+
+        if sd_hash and sd_hash is not None:
             parameters['sd_hash'] = sd_hash
-        
-        if not(file_name == '' or file_name is None):
+
+        if file_name and file_name is not None:
             parameters['file_name'] = file_name
-            
-        if not(claim_id == '' or claim_id is None):
+
+        if claim_id and claim_id is not None:
             parameters['claim_id'] = claim_id
-            
-        if not(claim_name == '' or claim_name is None):
+
+        if claim_name and claim_name is not None:
             parameters['claim_name'] = claim_name
-        
-        if not(len(parameters) > 2):
+
+        if len(parameters) <= 2:
             self.logger.error("Must provide something to delete")
             return
-        
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "file_delete",
                                      "params": parameters}).json()
-        
+
         m=f"file_delete call with parameters {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_file_save(self, download_directory : str,
@@ -451,17 +442,17 @@ class LBRY(plat.Platform):
             download_directory=download_directory,
             claim_id=claim_id
         )
-        
-        if not(file_name == '' or file_name is None):
+
+        if file_name and file_name is not None:
             parameters['file_name'] = file_name
-        
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "file_save",
                                      "params": parameters}).json()
-        
+
         m=f"file_save call with params: {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_stream_abandon(self, claim_id : str):
@@ -551,17 +542,17 @@ class LBRY(plat.Platform):
             license=lic,
             license_url=license_url
         )
-        
-        if not (file_path == '' or file_path is None):
+
+        if file_path and file_path is not None:
             parameters['file_path'] = file_path
-        
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "stream_update",
                                      "params": parameters}).json()
-        
+
         m=f"stream_update call with params: {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_claim_list(self, claim_type : list = [], claim_id : list = [],
@@ -582,24 +573,24 @@ class LBRY(plat.Platform):
             page_size=page_size,
             resolve=resolve,
         )
-        
-        if not (account_id == '' or account_id is None):
+
+        if account_id and account_id is not None:
             parameters['account_id']=account_id
-        
-        if not (page == 0 or page is None):
+
+        if page != 0 and page is not None:
             parameters['page']=page
-        
-        if not (order_by == '' or order_by is None):
+
+        if order_by and order_by is not None:
             parameters['order_by']=order_by
-        
-        
+
+
         result = requests.post(LBRY.API_URL,
                                json={"method": "claim_list",
                                      "params": parameters}).json()
-        
+
         m=f"claim_list call with params: {parameters} made to the LBRY API"
         self.logger.info(m)
-        
+
         return result
     
     def api_upload_thumb(self, file : str):

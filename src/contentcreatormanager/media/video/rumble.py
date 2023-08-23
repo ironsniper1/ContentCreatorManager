@@ -34,20 +34,20 @@ class RumbleVideo(media_vid.Video):
                                           thumbnail_file_name=thumbnail_file_name)
         self.logger = self.settings.Rumble_logger
         self.logger.info("Initializing Video Object as Rumble Video Object")
-        
-        if guid == '':
+
+        if not guid:
             self.set_unique_id()
         else:
             self.set_unique_id(guid)
-            
+
         # The method sets id to a unique random so setting guid with it 
         # (rumble id will be set on upload)
         self.guid = self.id
         self.url = ''
-            
+
         self.license_type = license_type
         self.uploaded = uploaded
-        
+
         self.logger.info(f"Rumble Video Object initialized with ID {self.id}")
 
     def upload(self):

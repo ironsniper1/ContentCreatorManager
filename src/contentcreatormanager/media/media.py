@@ -19,19 +19,19 @@ class Media(object):
         self.settings = platform.settings
         self.logger = self.settings.Media_logger
         self.platform = platform
-        
+
         self.logger.info(f"Initializing Media Object with id {ID}")
         self.id = ID
         self.uploaded = False
         self.file = None
-        
-        if self.id == '' or self.id is None:
+
+        if not self.id or self.id is None:
             self.set_unique_id()
-        
+
         self.title = ''
         self.tags = []
         self.description = ''
-        
+
         self.thumbnail = os.path.join(os.getcwd(), self.get_valid_thumbnail_file_name())
     
     def compare_thumbs(self, other_obj):
@@ -52,8 +52,7 @@ class Media(object):
         step_three = step_two.output(self.get_valid_thumbnail_file_name(),
                                      vframes=1)
         step_four = step_three.overwrite_output()
-        result = step_four.run(capture_stdout=False,capture_stderr=False)
-        return result
+        return step_four.run(capture_stdout=False,capture_stderr=False)
     
     def get_valid_thumbnail_file_name(self, desired_file_name : str = ''):
         """
@@ -62,16 +61,16 @@ class Media(object):
         """
         v='`~!@#$%^&+=,-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         valid_chars = v
-        
-        if desired_file_name == '':    
-            getVals = list([val for val in f"{self.title}.jpg" if val in valid_chars])
+
+        if not desired_file_name:
+            getVals = [val for val in f"{self.title}.jpg" if val in valid_chars]
         else:
-            if desired_file_name[-4:] == '.jpg':
-                file_name = desired_file_name[:-4]   
+            if desired_file_name.endswith('.jpg'):
+                file_name = desired_file_name[:-4]
             else:
-                file_name = desired_file_name 
-            getVals = list([val for val in f"{file_name}.jpg" if val in valid_chars])
-    
+                file_name = desired_file_name
+            getVals = [val for val in f"{file_name}.jpg" if val in valid_chars]
+
         return "".join(getVals)
     
     def is_downloaded(self):

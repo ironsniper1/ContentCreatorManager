@@ -99,15 +99,14 @@ class Twitter(plat.Platform):
         (This is if you provide an invalid attachment_url as this must be a Tweet permalink or Direct Message deep link)
         """
         self.logger.info("Making update_status Twitter API Call")
-        
-        if attachment_url == '' or attachment_url is None:
-            api=self.api
-            ps=possibly_sensitive
-            return api.update_status(status=status_text,media_ids=media_ids,
-                                          possibly_sensitive=ps)
-        else:
-            ps=possibly_sensitive
-            return self.api.update_status(status=status_text,
-                                          media_ids=media_ids,
-                                          possibly_sensitive=ps,
-                                          attachment_url=attachment_url)
+
+        ps=possibly_sensitive
+        if attachment_url and attachment_url is not None:
+            return self.api.update_status(
+                status=status_text,
+                media_ids=media_ids,
+                ps=ps,
+                attachment_url=attachment_url,
+            )
+        api=self.api
+        return api.update_status(status=status_text, media_ids=media_ids, ps=ps)
